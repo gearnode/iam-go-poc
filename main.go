@@ -4,7 +4,35 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	//  "database/sql"
+	_ "github.com/lib/pq"
 )
+
+type Organization struct {
+	ID     string
+	Prefix string
+	Email  string
+	Name   string
+}
+
+func (organization *Organization) ORN() *ORN {
+	return &ORN{
+		Namespace:    "jws",
+		Application:  "organizations",
+		OwnerID:      fmt.Sprintf("%s", organization.ID),
+		ResourceType: "account",
+		ResourcePath: fmt.Sprintf("%s/%s", organization.Prefix, organization.ID),
+	}
+}
+
+func test() {
+	org := Organization{
+		ID:     "101977606264",
+		Prefix: "o-jw41v5abna",
+		Email:  "sample@domain.com",
+	}
+	fmt.Println("Object Resource Name =>", org.ORN().String())
+}
 
 type ORN struct {
 	Namespace    string
@@ -12,6 +40,17 @@ type ORN struct {
 	ResourceType string
 	ResourcePath string
 	OwnerID      string
+}
+
+func (orn *ORN) String() string {
+	return fmt.Sprintf(
+		"orn:%s:%s::%s:%s/%s",
+		orn.Namespace,
+		orn.Application,
+		orn.OwnerID,
+		orn.ResourceType,
+		orn.ResourcePath,
+	)
 }
 
 type Statement struct {
@@ -53,6 +92,7 @@ func isPermitedResource(statement Statement, resource string) bool {
 }
 
 func isPermitedAction(statement Statement, action string) bool {
+	// Use HashSet to have O(1) func
 	for i := range statement.Actions {
 		if statement.Actions[i] == action {
 			return true
@@ -62,10 +102,18 @@ func isPermitedAction(statement Statement, action string) bool {
 }
 
 func main() {
-	x := Authorize(
-		ORN{},
-		"orn:campus-management:cockpit:93724:action/55",
-		"cockpit:showAction",
-	)
-	fmt.Println("DEBUG –– %t", x)
+	test()
+	// db, err := sql.Open("postgres", "postgres://postgres@localhost/iam")
+	// if err != nil { panic(err) }
+
+	// rows, err := db.Query("SELECT * FROM organizations")
+	// if err != nil { panic(err) }
+	// defer db.Close()
+
+	// x := Authorize(
+	// 	ORN{},
+	// 	"orn:campus-management:cockpit:93724:action/55",
+	// 	"cockpit:showAction",
+	// )
+	// fmt.Println("DEBUG –– %t", x)
 }
